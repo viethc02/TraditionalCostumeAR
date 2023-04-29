@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { addDoc, collection, doc, getDocs, getFirestore, query, where, documentId, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { getStorage, ref, getDownloadURL, uploadBytesResumable, deleteObject  } from "firebase/storage";
 import config from "../config/firebase.config"
 import { pick } from "lodash";
 import express, { Router, Request, Response } from "express";
@@ -11,15 +12,22 @@ const app = initializeApp(config.firebaseConfig);
 // Initialize Cloud Firestore and get a reference to the service
 const db = getFirestore(app);
 
+const storage = getStorage();
+
 // Get reference to employee collection
-const employeesRef = collection(db, "employee");
+const meshRef = collection(db, "mesh");
 
 //Add new Employee
 router.post('/', async (req: Request, res: Response) => {
     try {
-        const employee = pick(req.body, ['name', 'age', 'position', 'isPermanent']);
-        const docRef = await addDoc(employeesRef, employee);
-        console.log("Document written with ID: ", docRef.id);
+        const mesh = pick(req.body, ['name', 'detail', 'url']);
+        const storageRef = ref(storage, `files/${mesh.name}`);
+        if (mesh.url == null) {
+            const filePath = await getDownloadURL(storageRef);
+            mesh.url = filePath;
+        }
+        var docRef = await setDoc(doc(db, 'mesh', mesh.name), mesh);
+        console.log("Document written with ID: ", mesh);
         return res.send('New employee added to DB.')
     } catch (e) {
         return res.status(400).send(e.message)
@@ -29,7 +37,7 @@ router.post('/', async (req: Request, res: Response) => {
 //Get records of all employees
 router.get('/', async (req: Request, res: Response) => {
     try {
-        const querySnapshot = await getDocs(employeesRef);
+        const querySnapshot = await getDocs(meshRef);
         const records = [];
         querySnapshot.forEach((doc) => {
             // doc.data() is never undefined for query doc snapshots
@@ -46,14 +54,14 @@ router.get('/', async (req: Request, res: Response) => {
 // Get employee by Id
 router.get('/:id', async (req: Request, res: Response) => {
     try {
-        const employeeId = req.params.id
+        const meshId = req.params.id
 
-        const q = query(employeesRef, where(documentId(), "==", employeeId));
+        const q = query(meshRef, where(documentId(), "==", meshId));
         // const q = query(employeesRef, where("isPermanent", "==", true));
 
         const querySnapshot = await getDocs(q);
         if (querySnapshot.empty) {
-            return res.send(`Employee with id ${employeeId} does not exists.`)
+            return res.send(`Employee with id ${meshId} does not exists.`)
         }
         const employeeRecord = querySnapshot.docs[0].data();
         res.send({
@@ -69,7 +77,7 @@ router.put('/:id', async (req: Request, res: Response) => {
     try {
         const employeeId = req.params.id;
         const UpdatedEmployee = pick(req.body, ['name', 'age', 'position', 'isPermanent']);
-        const q = query(employeesRef, where(documentId(), "==", employeeId));
+        const q = query(meshRef, where(documentId(), "==", employeeId));
         const querySnapshot = await getDocs(q);
         if (querySnapshot.empty) {
             return res.send(`Employee with id ${employeeId} does not exists.`)
@@ -83,18 +91,14 @@ router.put('/:id', async (req: Request, res: Response) => {
 })
 
 // Delete employee records 
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/', async (req: Request, res: Response) => {
     try {
-        const employeeId = req.params.id;
-        const querySnapshot = await getDocs(query(employeesRef, where(documentId(), "==", employeeId)));
-        if (querySnapshot.empty) {
-            return res.send(`Employee with id ${employeeId} does not exists.`)
-        }
-        //deleteDoc delete a document if exists
-        await deleteDoc(doc(db, "employee", employeeId));
-        res.send('Employee records Deleted.')
+        const meshName = req.query.name;
+        console.log(meshName);
+        await deleteDoc(doc(db, "mesh", `${meshName}`));
+        return res.send(`${meshName} is deleted.`);
     } catch (error) {
-        res.status(400).send(error.message)
+        res.status(400).send(error.message);
     }
 })
 

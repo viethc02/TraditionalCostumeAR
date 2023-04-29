@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { addDoc, collection, doc, getDocs, getFirestore, query, where, documentId, setDoc } from "firebase/firestore";
+import { getStorage, ref, getDownloadURL, uploadBytesResumable, deleteObject  } from "firebase/storage";
 import config from "../config/firebase.config"
 import { pick } from "lodash";
 import express, { Router, Request, Response } from "express";
@@ -13,6 +14,8 @@ const db = getFirestore(app);
 
 // Get reference to employee collection
 const cityRef = collection(db, "cities");
+
+const storage = getStorage();
 
 // Add new data
 router.post('/', async (req: Request, res: Response) => {

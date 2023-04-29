@@ -2,7 +2,8 @@ import express, { Express } from "express";
 import uploadRouter from "./controllers/upload-file.controller";
 import downloadRouter from "./controllers/upload-file.controller";
 import deleteRouter from "./controllers/upload-file.controller";
-import employeeRouter from "./controllers/crud.controller";
+import uploadMeshRouter from "./controllers/crud.controller";
+import deleteMeshRouter from "./controllers/crud.controller";
 import cityRouter from "./controllers/cities-crud.controller";
 import bodyParser from "body-parser";
 import * as dotenv from 'dotenv'
@@ -23,7 +24,8 @@ app.get('/', (req, res) => {
 app.use('/upload', uploadRouter);
 app.use('/delete', deleteRouter);
 app.use('/download', downloadRouter);
-app.use('/employee', employeeRouter);
+app.use('/uploadMesh', uploadMeshRouter);
+app.use('/deleteMeshRouter', deleteMeshRouter);
 app.use('/city', cityRouter);
 
 
